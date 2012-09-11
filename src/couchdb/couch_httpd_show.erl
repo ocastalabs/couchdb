@@ -139,9 +139,18 @@ send_doc_update_response(Req, Db, DDoc, UpdateName, Doc, DocId) ->
             end,
             NewDoc = couch_doc:from_json_obj({NewJsonDoc}),
             {ok, NewRev} = couch_db:update_doc(Db, NewDoc, Options),
+            [{<<"json">>, {Props}}] = JsonResp,
+            HeaderDocId = case DocId of
+                              null -> 
+                                  {_, NewDocId} = lists:keyfind(<<"id">>, 1, Props),
+                                  NewDocId;
+                              _ ->
+                                  DocId
+                          end,
             NewRevStr = couch_doc:rev_to_str(NewRev),
+           
             {[{<<"code">>, 201}, {<<"headers">>,
-                {[{<<"X-Couch-Update-NewRev">>, NewRevStr}]}} | JsonResp]};
+                {[{<<"X-Couch-Update-NewRev">>, NewRevStr}, {<<"X-Couch-Id">>, HeaderDocId}]}} | JsonResp]};
         [<<"up">>, _Other, {JsonResp}] ->
             {[{<<"code">>, 200} | JsonResp]}
     end,
